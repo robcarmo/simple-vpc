@@ -1,53 +1,45 @@
 # Simple 3-Tier VPC Infrastructure
 
-This repository contains Terraform configurations for deploying a 3-tier VPC infrastructure with the following components:
+This repository contains Terraform configurations for deploying a 3-tier VPC architecture in AWS, consisting of:
 
-- VPC with public and private subnets
-- EC2 instances in the application tier
-- RDS database in the data tier
+- A VPC with public, application, and database subnets across two availability zones
+- An EC2 instance in the public subnet with internet access
+- A PostgreSQL RDS database in the database subnet
 
-## Module Structure
+## Architecture
 
-```
-.
-├── main.tf           # Root module configuration
-├── variables.tf      # Root variables
-├── outputs.tf        # Root outputs
-├── terraform.tfvars  # Variable values
-└── 3tier/
-    ├── vpc/         # VPC module
-    ├── compute/     # Compute module
-    └── database/    # Database module
-```
+The infrastructure is organized into three modules:
+- vpc: Network infrastructure including VPC, subnets, and routing
+- compute: EC2 instance configuration
+- database: RDS PostgreSQL instance setup
+
+## Prerequisites
+
+- AWS CLI configured with profile 'roberto-main'
+- Terraform installed
 
 ## Usage
 
 1. Initialize Terraform:
-```
+```bash
 terraform init
 ```
 
-2. Review the plan:
-```
+2. Review planned changes:
+```bash
 terraform plan
 ```
 
 3. Apply the configuration:
-```
+```bash
 terraform apply
 ```
 
-## Variables
+## Resources Created
 
-See terraform.tfvars for default values. Key variables include:
-
-- vpc_cidr: VPC CIDR block
-- environment: Environment name (dev/staging/prod)
-- instance_type: EC2 instance type
-- db_instance_class: RDS instance class
-
-## Outputs
-
-- vpc_id: ID of the created VPC
-- app_instance_ip: Public IP of application instance
-- db_endpoint: RDS endpoint for connections
+- VPC with 6 subnets (2 each for public, application, and database tiers)
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+- EC2 instance in public subnet
+- RDS PostgreSQL instance in database subnet
