@@ -1,7 +1,14 @@
-output "ec2_public_ip" {
-  value = aws_instance.web.public_ip
+output "vpc_id" {
+  description = "ID of the VPC"
+  value       = module.vpc.vpc_id
 }
 
-output "rds_endpoint" {
-  value = aws_db_instance.postgres.endpoint
+output "app_instance_ip" {
+  description = "Public IP of the application instance"
+  value       = module.compute.public_ip
+}
+
+output "db_endpoint" {
+  description = "Database connection endpoint"
+  value       = module.database.endpoint
 }
