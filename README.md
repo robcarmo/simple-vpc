@@ -1,82 +1,66 @@
-# Simple VPC Architecture
+# 3-Tier VPC Infrastructure
 
-This repository contains Terraform configurations for a 3-tier VPC architecture in AWS with EC2 and RDS PostgreSQL.
-
-## Architecture
-
-- VPC with public and private subnets
+## Architecture Overview
+- VPC with public and private subnets across multiple AZs
 - EC2 instance in public subnet with internet access
-- RDS PostgreSQL instance in private subnet
-- Security groups for EC2 and RDS
+- PostgreSQL RDS instance in private subnet
+- Security groups for EC2 and RDS instances
+
+## Module Structure
+```
+3tier/
+├── compute/     # EC2 instance configuration
+├── database/    # RDS instance configuration
+└── vpc/         # VPC and networking components
+```
 
 ## Prerequisites
-
-- AWS CLI configured with profile `roberto-main`
+- AWS CLI configured
 - Terraform installed
+- Access to AWS account with required permissions
 
-## Deployment
-
+## Deployment Instructions
+1. Initialize Terraform:
 ```bash
 terraform init
-terraform plan -var-profile="roberto-main"
-terraform apply -var-profile="roberto-main"
+```
+
+2. Review planned changes:
+```bash
+terraform plan
+```
+
+3. Apply the configuration:
+```bash
+terraform apply
 ```
 
 ## Testing and Validation
-
-### Infrastructure Validation Script
+Run the validation script:
 ```bash
-#!/bin/bash
-# Save as validate.sh
-
-# Set AWS Profile
-export AWS_PROFILE=roberto-main
-
-# Get VPC ID
-VPC_ID=$(aws ec2 describe-vpcs --filters "Name=tag:Name,Values=main" --query 'Vpcs[0].VpcId' --output text)
-
-# Validate VPC
-echo "Checking VPC..."
-aws ec2 describe-vpcs --vpc-ids $VPC_ID
-
-# Validate Subnets
-echo "Checking Subnets..."
-aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID"
-
-# Check EC2 Instance
-echo "Checking EC2..."
-aws ec2 describe-instances --filters "Name=tag:Name,Values=app-server" --query 'Reservations[*].Instances[*]'
-
-# Check RDS
-echo "Checking RDS..."
-aws rds describe-db-instances --query 'DBInstances[?DBInstanceIdentifier==`main-postgres`]'
+chmod +x validate.sh
+./validate.sh
 ```
 
-### Component Testing
+## Key Variables
+- VPC CIDR: 10.0.0.0/16
+- Public subnet CIDR: 10.0.1.0/24
+- Private subnet CIDR: 10.0.2.0/24
+- EC2 instance type: t2.micro
+- RDS instance class: db.t3.micro
 
-#### VPC Testing
-```bash
-# Test Internet Connectivity
-aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPC_ID"
+## Outputs
+- vpc_id: VPC identifier
+- app_instance_ip: Public IP of EC2 instance
+- db_endpoint: RDS endpoint
 
-# Test Route Tables
-aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPC_ID"
-```
+## Security Considerations
+- EC2 instance in public subnet with restricted security group
+- RDS instance in private subnet
+- Security groups limit access to necessary ports only
 
-#### EC2 Testing
-```bash
-# Get EC2 Public IP
-EC2_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=app-server" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-
-# Test SSH Connection
-ssh -i your-key.pem ec2-user@$EC2_IP
-```
-
-#### RDS Testing
-```bash
-# Get RDS Endpoint
-RDS_ENDPOINT=$(aws rds describe-db-instances --query 'DBInstances[?DBInstanceIdentifier==`main-postgres`].Endpoint.Address' --output text)
-
-# Test Database Connection (from EC2)
-psql -h $RDS_ENDPOINT -U postgres -d postgres
-```
+## Customization Guidelines
+Modify terraform.tfvars for custom configurations:
+- CIDR ranges
+- Instance types
+- Database parameters
