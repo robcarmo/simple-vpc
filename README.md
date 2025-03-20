@@ -1,45 +1,57 @@
-# Simple 3-Tier VPC Infrastructure
+# Simple VPC Architecture
 
-This repository contains Terraform configurations for deploying a 3-tier VPC architecture in AWS, consisting of:
-
-- A VPC with public, application, and database subnets across two availability zones
-- An EC2 instance in the public subnet with internet access
-- A PostgreSQL RDS database in the database subnet
+This repository contains Terraform code for a 3-tier VPC architecture in AWS with EC2 and RDS PostgreSQL.
 
 ## Architecture
 
-The infrastructure is organized into three modules:
-- vpc: Network infrastructure including VPC, subnets, and routing
-- compute: EC2 instance configuration
-- database: RDS PostgreSQL instance setup
+- VPC with public and private subnets
+- EC2 instance in public subnet with internet access
+- RDS PostgreSQL instance in private subnet
+- Security groups for EC2 and RDS
 
 ## Prerequisites
 
-- AWS CLI configured with profile 'roberto-main'
+- AWS CLI configured with profile `roberto-main`
 - Terraform installed
 
-## Usage
+## Deployment
 
-1. Initialize Terraform:
 ```bash
 terraform init
+terraform plan -var-file="terraform.tfvars"
+terraform apply -var-file="terraform.tfvars"
 ```
 
-2. Review planned changes:
+## Testing and Validation
+
+### Infrastructure Validation
+
 ```bash
-terraform plan
+# Verify VPC
+aws ec2 describe-vpcs --profile roberto-main --filters "Name=tag:Name,Values=main" --query 'Vpcs[*].{VpcId:VpcId,CidrBlock:CidrBlock}'
+
+# Check Subnets
+aws ec2 describe-subnets --profile roberto-main --filters "Name=vpc-id,Values=<vpc-id>" --query 'Subnets[*].{SubnetId:SubnetId,CidrBlock:CidrBlock}'
+
+# Verify EC2 Instance
+aws ec2 describe-instances --profile roberto-main --filters "Name=tag:Name,Values=app-server" --query 'Reservations[*].Instances[*].{InstanceId:InstanceId,State:State.Name,PublicIP:PublicIpAddress}'
+
+# Check RDS Instance
+aws rds describe-db-instances --profile roberto-main --query 'DBInstances[*].{DBInstanceIdentifier:DBInstanceIdentifier,Status:DBInstanceStatus,Endpoint:Endpoint.Address}'
 ```
 
-3. Apply the configuration:
+### Connectivity Testing
+
 ```bash
-terraform apply
+# Test EC2 Internet Access
+ssh ec2-user@<ec2-public-ip> 'ping -c 4 8.8.8.8'
+
+# Test RDS Connection (from EC2)
+ssh ec2-user@<ec2-public-ip> 'psql -h <rds-endpoint> -U postgres -d postgres'
 ```
 
-## Resources Created
+### Cleanup
 
-- VPC with 6 subnets (2 each for public, application, and database tiers)
-- Internet Gateway
-- NAT Gateway
-- Route Tables
-- EC2 instance in public subnet
-- RDS PostgreSQL instance in database subnet
+```bash
+terraform destroy -var-file="terraform.tfvars"
+```
