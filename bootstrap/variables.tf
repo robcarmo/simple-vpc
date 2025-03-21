@@ -1,15 +1,9 @@
-variable "region" {
-  description = "AWS region"
+# variables.tf
+variable "environment" {
+  description = "Environment (dev, prod, or stag)"
   type        = string
-  default     = "us-east-1"
-}
-
-variable "bucket_name" {
-  description = "Name of the S3 bucket for Terraform state"
-  type        = string
-}
-
-variable "dynamodb_table_name" {
-  description = "Name of the DynamoDB table for Terraform state locking"
-  type        = string
+  validation {
+    condition     = contains(["dev", "prod", "stag"], var.environment)
+    error_message = "Environment must be one of: dev, prod, stag."
+  }
 }

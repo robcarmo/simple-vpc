@@ -1,11 +1,12 @@
 terraform {
   backend "s3" {
-    bucket         = "YOUR_BUCKET_NAME"
-    key            = "terraform.tfstate"
+    bucket         = "tfstate-dev-qjau56sf" # Replace with your actual bucket name
+    key            = "tfstate"                  # Updated state file name
     region         = "us-east-1"
-    dynamodb_table = "YOUR_DYNAMODB_TABLE_NAME"
+    dynamodb_table = "statetable-dev"               # Updated table name
     encrypt        = true
   }
+
 
   required_providers {
     aws = {
@@ -13,11 +14,6 @@ terraform {
       version = "~> 4.0"
     }
   }
-}
-
-provider "aws" {
-  region  = var.aws_region
-  profile = "roberto-main"
 }
 
 module "vpc" {
