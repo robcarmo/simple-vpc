@@ -1,8 +1,3 @@
-provider "aws" {
-  region  = var.aws_region
-  profile = "roberto-main"
-}
-
 terraform {
   required_providers {
     aws = {
@@ -10,6 +5,14 @@ terraform {
       version = "~> 4.0"
     }
   }
+  
+  backend "s3" {
+    encrypt = true
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
 }
 
 module "vpc" {
