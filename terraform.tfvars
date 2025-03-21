@@ -4,7 +4,7 @@ private_subnets = ["10.0.3.0/24", "10.0.4.0/24"]
 availability_zones = ["us-east-1a", "us-east-1b"]
 environment = "dev"
 
-ami_id = "ami-0c55b159cbfafe1f0"
+ami_id = "ami-01f5a0b78d6089704"
 instance_type = "t2.micro"
 
 db_engine = "mysql"
