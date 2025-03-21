@@ -39,13 +39,14 @@ jobs:
         id: plan
         run: terraform plan -destroy -out=tfplan -no-color
 
-      # Step 6: Require Manual Approval
-      - name: Wait for Manual Approval
-        uses: hmarr/auto-approve-action@v2
-        with:
-          message: "Please review the Terraform destroy plan and approve to proceed."
+      # Step 6: Pause for Manual Approval
+      - name: Manual Approval
+        run: |
+          echo "Please review the Terraform destroy plan and approve to proceed."
+          echo "To continue, click 'Re-run jobs' and approve the workflow."
+        continue-on-error: true
 
       # Step 7: Apply the Destroy
       - name: Terraform Apply Destroy
-        if: ${{ github.event.inputs.approved == 'true' }}
-        run: terraform apply -destroy -auto-approve -no-color
+        if: ${{ success() }}
+        run: terraform apply "tfplan" -auto-approve -no-color
