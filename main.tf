@@ -1,15 +1,23 @@
-provider "aws" {
-  region  = var.aws_region
-  profile = "roberto-main"
-}
-
 terraform {
+  backend "s3" {
+    bucket         = "YOUR_BUCKET_NAME"
+    key            = "terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "YOUR_DYNAMODB_TABLE_NAME"
+    encrypt        = true
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 4.0"
     }
   }
+}
+
+provider "aws" {
+  region  = var.aws_region
+  profile = "roberto-main"
 }
 
 module "vpc" {
