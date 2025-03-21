@@ -40,24 +40,12 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      #- name: Terraform Format
-      #  run: terraform fmt -check
-
       - name: Terraform Validate
         run: terraform validate
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -out=tfplan
-
-      # Upload plan file as an artifact
-      - name: Upload Terraform Plan
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v3
-        with:
-          name: terraform-plan
-          path: tfplan
-          retention-days: 1
+        run: terraform plan
 
       - name: Post Plan Results
         if: github.event_name == 'pull_request'
@@ -94,11 +82,5 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      # Download the plan file
-      - name: Download Terraform Plan
-        uses: actions/download-artifact@v3
-        with:
-          name: terraform-plan
-
       - name: Terraform Apply
-        run: terraform apply tfplan
+        run: terraform apply -auto-approve
