@@ -49,4 +49,4 @@ jobs:
       # Step 7: Apply the Destroy
       - name: Terraform Apply Destroy
         if: ${{ success() }}
-        run: terraform apply "tfplan" -auto-approve -no-color
+        run: terraform apply -input=false tfplan
