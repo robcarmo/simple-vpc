@@ -1,29 +1,132 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
   terraform:
+    name: Terraform
     runs-on: ubuntu-latest
+    
+    # Set permissions for GitHub token
+    permissions:
+      contents: read
+      pull-requests: write
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.0
-
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
+          aws-region: us-east-1  # Hardcoded region
+      
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+      
       - name: Terraform Init
-        run: terraform init
-
+        id: init
+        run: |
+          # If you need to specify backend config with hardcoded region
+          terraform init -backend-config="region=us-east-1"
+      
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+      
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
-        # This creates the plan file named "tfplan"
-
+        id: plan
+        run: |
+          # Set AWS region as environment variable for Terraform
+          export AWS_REGION=us-east-1
+          export TF_VAR_region=us-east-1
+          terraform plan -out=tfplan
+        continue-on-error: true
+      
+      # Add a comment to PR with plan output
+      - name: Add Plan Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            
+            <details><summary>Show Plan</summary>
+            
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`
+            
+            </details>
+            
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+      
+      # Apply changes only on push to main branch
       - name: Terraform Apply
-        run: terraform apply tfplan
-        # Note: No quotes around tfplan
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          # Set AWS region as environment variable for Terraform
+          export AWS_REGION=us-east-1
+          export TF_VAR_region=us-east-1
+          terraform apply -auto-approve
+      
+      # Optional: Save Terraform output as artifact
+      - name: Archive Terraform Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-plan
+          path: tfplan
+          retention-days: 5
+
+  # Optional: Add a separate job for cleanup or other post-apply tasks
+  post_apply:
+    name: Post-Apply Tasks
+    needs: terraform
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # Hardcoded region
+      
+      - name: Run post-apply script
+        run: |
+          echo "Deployment completed successfully!"
+          # Add any post-deployment tasks here
+          # AWS CLI commands will use us-east-1 region
